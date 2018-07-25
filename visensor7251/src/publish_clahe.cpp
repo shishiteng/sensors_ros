@@ -53,6 +53,11 @@ int gain = 3;
 int dlfp_acc = 0;
 int dlfp_gyr = 1;
 
+//时间差补偿
+int offset_k1 = 850;
+int offset_k2 = 0;
+Mat timeshifts;
+
 //温漂补偿、常数噪声补偿、尺度偏差、轴间偏差
 int temperature_compensation = 1;
 int bias_correction = 1;
@@ -108,6 +113,22 @@ int readConfig(char *config_file)
   cout << " dlfp_acc:"<<dlfp_acc <<endl;
   dlfp_gyr = (int)fsettings["dlfp_gyr"];
   cout << " dlfp_gyr:"<<dlfp_gyr <<endl;
+
+  fsettings["tsc2i"]>>timeshifts;
+  for(int i=0;i<timeshifts.cols;++i){
+    if(static_cast<int>(timeshifts.row(0).col(i).at<double>(0,0))==imu_frame_rate){
+      if(timeshifts.row(1).col(i).at<double>(0,0)<0){
+        offset_k1 = -timeshifts.row(1).col(i).at<double>(0,0);
+        offset_k2 = 1;
+      }
+      else{
+        offset_k1 = timeshifts.row(1).col(i).at<double>(0,0);
+        offset_k2 = 0;
+      }
+      break;
+    }
+  }
+  cout << " time offset:"<<((offset_k2==0?1:-1) * offset_k1 )<<"us"<<endl;
 
   temperature_compensation = (int)fsettings["temperature_compensation"];
   cout << " temperature_compensation:"<< temperature_compensation <<endl;
@@ -336,7 +357,7 @@ int main(int argc, char** argv)
 
   //3.device settings
   //帧率、自动曝光配置
-  cam->config(img_frame_rate,imu_frame_rate,max_exposure_time,min_exposure_time,cur_exposure_time);
+  cam->config(img_frame_rate,imu_frame_rate,max_exposure_time,min_exposure_time,cur_exposure_time,100*offset_k1,offset_k2);
 
   // 设置低通滤波
   cam->setDlfpFlag(dlfp_acc, dlfp_gyr);

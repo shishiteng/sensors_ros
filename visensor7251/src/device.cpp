@@ -817,7 +817,7 @@ bool device::sendData(void *data, int bytes, uint rowNum, uint cmd,
 /****************加入硬件同步，接口扩展，start**************/
   
 // 配置设备：imu帧率、图像帧率、最大曝光时间、最小曝光时间、当前曝光时间
-bool device::config(int img_freq,int imu_freq,int max_exposure_time,int min_exposure_time,int cur_exposure_time)
+bool device::config(int img_freq,int imu_freq,int max_exposure_time,int min_exposure_time,int cur_exposure_time,int offset_k1,int offset_k2)
 {
 
   uint sys_reg_cfg[CFG_SYS_REG_SPACE_SIZE / 4][2] =
@@ -835,7 +835,7 @@ bool device::config(int img_freq,int imu_freq,int max_exposure_time,int min_expo
       { 0x20,                            0 }, /* reserved */
 
       { 0x24,                0x5 << 16 | 0x7 }, /* [23:16] gain frame gap,    [3: 0] sensor auto-gain tap numberr */
-#if 0
+#if 1
       { 0x28,                         0x10 }, /* [31:00] auto-gain tap 00 */
       { 0x2C,                         0x20 }, /* [31:00] auto-gain tap 01 */
       { 0x30,                         0x30 }, /* [31:00] auto-gain tap 02 */
@@ -879,6 +879,9 @@ bool device::config(int img_freq,int imu_freq,int max_exposure_time,int min_expo
       { 0xB4,        0 }, /* reserved */
       { 0xB8,        0 }, /* [15: 0] display threshold row num */
 
+      { 0xC0,        offset_k1 }, /* time offset k1 */
+      { 0xC4,        offset_k2 }, /* time offset k2 */
+
       { 0xFC,                       0xC7E1 }  /* [7 : 0] system enable */
       //{ 0xFC,                       0xC701 }  //关闭自动曝光、自动增益
     };
@@ -895,7 +898,7 @@ bool device::config(int img_freq,int imu_freq,int max_exposure_time,int min_expo
   // [1] post_img display enable, default= 0
   // [0] pre_img display enable, default= 0
   */
-  for (int i = 0; i <= (0xBC-40) / 4; i++) {
+  for (int i = 0; i <= 0xC4 / 4; i++) {
     sendCmd(SYS_CTRL_REG_BASE_ADDR, sys_reg_cfg[i][1], sys_reg_cfg[i][0], 0, 0);
   }
 

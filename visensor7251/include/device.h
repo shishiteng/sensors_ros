@@ -95,7 +95,7 @@ class device
 
     /****************加入硬件同步，接口扩展，start**************/
     // 配置设备：imu帧率、图像帧率、最大曝光时间、最小曝光时间、当前曝光时间
-    bool config(int img_freq,int imu_freq,int max_exposure_time,int min_exposure_time,int cur_exposure_time);
+    bool config(int img_freq,int imu_freq,int max_exposure_time,int min_exposure_time,int cur_exposure_time,int offset_k1,int offset_k2);
 
     // 设置曝光模式,0-自动曝光，1-固定曝光
     bool setExposureMode(int flag);
