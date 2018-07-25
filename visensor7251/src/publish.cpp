@@ -276,22 +276,25 @@ void imu_process(ros::NodeHandle *nh ,device *cam)
       imu_msg.linear_acceleration.x = acc.at<double>(0);
       imu_msg.linear_acceleration.y = acc.at<double>(1);
       imu_msg.linear_acceleration.z = acc.at<double>(2);
+      imu_msg.orientation_covariance[0] = temperature; //加入温度
       imu_pub.publish(imu_msg);
 
       //发布用来调试对比的imu topic
-      publishOthers(&imudata);
+      //publishOthers(&imudata);
 
 #if 1
+      double norm2 = pow(acc.at<double>(0),2)+pow(acc.at<double>(2),2)+pow(acc.at<double>(1),2);
       Mat acc__ = alignment_acc * (meas_acc - bias_acc - temp_drift_acc);
-      Mat gyr__ = alignment_gyr * (meas_gyr - bias_gyr - temp_drift_gyr);
-      fprintf(stderr,"%f %4d %4d %4d %4d %4d %4d %f\n",timestamp.toSec(),
+      Mat gyr__ = alignment_gyr * (meas_gyr - bias_gyr - temp_drift_gyr);   
+      fprintf(stderr,"%f %4d %4d %4d %4d %4d %4d %.3f %.3f\n",timestamp.toSec(),
 	      (int)gyr__.at<double>(0),
 	      (int)gyr__.at<double>(1),
 	      (int)gyr__.at<double>(2),
 	      (int)acc__.at<double>(0),
 	      (int)acc__.at<double>(1),
 	      (int)acc__.at<double>(2),
-	      temperature);
+	      temperature,
+              sqrt(norm2));
 #endif
     }
   }

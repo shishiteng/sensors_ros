@@ -50,6 +50,8 @@ int imu_frame_rate = 200;
 int auto_exposure = 1;
 int exposure_time = 3;
 int gain = 3;
+int dlfp_acc = 0;
+int dlfp_gyr = 1;
 
 //温漂补偿、常数噪声补偿、尺度偏差、轴间偏差
 int temperature_compensation = 1;
@@ -101,6 +103,11 @@ int readConfig(char *config_file)
   cout << " exposure_time:"<<exposure_time <<endl;
   gain = (int)fsettings["gain"];
   cout << " gain:"<<gain <<endl;
+
+  dlfp_acc = (int)fsettings["dlfp_acc"];
+  cout << " dlfp_acc:"<<dlfp_acc <<endl;
+  dlfp_gyr = (int)fsettings["dlfp_gyr"];
+  cout << " dlfp_gyr:"<<dlfp_gyr <<endl;
 
   temperature_compensation = (int)fsettings["temperature_compensation"];
   cout << " temperature_compensation:"<< temperature_compensation <<endl;
@@ -268,22 +275,25 @@ void imu_process(ros::NodeHandle *nh ,device *cam)
       imu_msg.linear_acceleration.x = acc.at<double>(0);
       imu_msg.linear_acceleration.y = acc.at<double>(1);
       imu_msg.linear_acceleration.z = acc.at<double>(2);
+      imu_msg.orientation_covariance[0] = temperature; //加入温度
       imu_pub.publish(imu_msg);
 
       //发布用来调试对比的imu topic
-      publishOthers(&imudata);
+      //publishOthers(&imudata);
 
 #if 1
+      double norm2 = pow(acc.at<double>(0),2)+pow(acc.at<double>(2),2)+pow(acc.at<double>(1),2);
       Mat acc__ = alignment_acc * (meas_acc - bias_acc - temp_drift_acc);
-      Mat gyr__ = alignment_gyr * (meas_gyr - bias_gyr - temp_drift_gyr);
-      fprintf(stderr,"%f %4d %4d %4d %4d %4d %4d %f\n",timestamp.toSec(),
+      Mat gyr__ = alignment_gyr * (meas_gyr - bias_gyr - temp_drift_gyr);   
+      fprintf(stderr,"%f %4d %4d %4d %4d %4d %4d %.3f %.3f\n",timestamp.toSec(),
 	      (int)gyr__.at<double>(0),
 	      (int)gyr__.at<double>(1),
 	      (int)gyr__.at<double>(2),
 	      (int)acc__.at<double>(0),
 	      (int)acc__.at<double>(1),
 	      (int)acc__.at<double>(2),
-	      temperature);
+	      temperature,
+              sqrt(norm2));
 #endif
     }
   }
@@ -327,6 +337,9 @@ int main(int argc, char** argv)
   //3.device settings
   //帧率、自动曝光配置
   cam->config(img_frame_rate,imu_frame_rate,max_exposure_time,min_exposure_time,cur_exposure_time);
+
+  // 设置低通滤波
+  cam->setDlfpFlag(dlfp_acc, dlfp_gyr);
 
 #if 0
   //关闭自动曝光,
