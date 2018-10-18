@@ -32,6 +32,10 @@ link_directories(${catkin_LIBRARIES})
 add_executable(visensor7251 src/publish.cpp src/device.cpp src/snTool.cpp)
 target_link_libraries(visensor7251 ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} -lcyusb)
 
+# add publisher_systime
+add_executable(visensor7251_systime src/publish_systime.cpp src/device.cpp src/snTool.cpp)
+target_link_libraries(visensor7251_systime ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} -lcyusb)
+
 # add publisher
 add_executable(visensor7251_clahe src/publish_clahe.cpp src/device.cpp src/snTool.cpp)
 target_link_libraries(visensor7251_clahe ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} -lcyusb)
