@@ -45,6 +45,8 @@ void phase_packet_data(Packet_t *p,imu_data_t *data)
   data->att[1] = ((float)(int16_t)(p->buf[24] + (p->buf[25]<<8))/100); //pitch
   data->att[0] = ((float)(int16_t)(p->buf[26] + (p->buf[27]<<8))/100); //roll
   data->att[2] = ((float)(int16_t)(p->buf[28] + (p->buf[29]<<8))/10);  //yaw
+  // = (int16_t)(p->buf[31] + (p->buf[29]<<8))/10)
+  data->presure = (int32_t)p->buf[31] + (int32_t)(p->buf[32]<<8) + (int32_t)(p->buf[33]<<16) + (int32_t)(p->buf[34]<<24);
   return;
 }
 
@@ -243,13 +245,13 @@ int main(int argc, char **argv)
 	imu_data_t imu;
 	phase_packet_data(p,&imu);
 	char str[128];
-	sprintf(str,"%llu,%lf,%lf,%lf,%lf,%lf,%lf\n", nanosec(),
+	sprintf(str,"%llu,%lf,%lf,%lf,%lf,%lf,%lf %d\n", nanosec(),
 		imu.gyro[0]*sg, imu.gyro[1]*sg, imu.gyro[2]*sg,
-		imu.accl[0]*sa, imu.accl[1]*sa, imu.accl[2]*sa);
+		imu.accl[0]*sa, imu.accl[1]*sa, imu.accl[2]*sa, imu.presure);
       
-	//printf(str,"%s",str); 
+	printf(str,"%s",str); 
 	//fisheye7251和imuV2的time offset是23ms
-	ros::Duration offset(0.023061189);
+	ros::Duration offset(0.0);
 	imu_msg.header.stamp = ros::Time::now() + offset;
 	
 	imu_msg.angular_velocity.x = imu.gyro[0] * sg;
@@ -258,6 +260,8 @@ int main(int argc, char **argv)
 	imu_msg.linear_acceleration.x = imu.accl[0] * sa;
 	imu_msg.linear_acceleration.y = imu.accl[1] * sa;
 	imu_msg.linear_acceleration.z = imu.accl[2] * sa;
+	
+	imu_msg.orientation.x = (double)imu.presure;
 
 	mag_msg.header.stamp = imu_msg.header.stamp;
 	mag_msg.vector.x = imu.mag[0] * sm;
