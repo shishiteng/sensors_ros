@@ -394,6 +394,7 @@ int main(int argc, char** argv)
 	continue;
 
       ros::Time timestamp = toRosTime(imgTimeStamp);
+      //ros::Time timestamp = ros::Time::now();
       //printf("image  :%lf,   %lf\n",timestamp.toSec(),(double)imgTimeStamp/100000000);
 
       Mat left_equalize,right_equalize;

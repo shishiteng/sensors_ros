@@ -1,0 +1,8 @@
+<?xml version="1.0" ?>
+<launch>
+    <node pkg="turtlebot_teleop" type="turtlebot_teleop_key" name="ginger_teleop" output="screen" >
+        <param name="scale_linear" value="0.5" type="double" />
+        <param name="scale_angular" value="1.5" type="double" />
+        <remap from="ginger_teleop/cmd_vel" to="/navigation_velocity_smoother/raw_cmd_vel" />
+    </node>
+</launch>
