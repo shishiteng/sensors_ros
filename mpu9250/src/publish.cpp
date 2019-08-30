@@ -1,6 +1,7 @@
 #include "ros/ros.h"
 #include "std_msgs/String.h"
 #include "sensor_msgs/Imu.h"
+#include "sensor_msgs/FluidPressure.h"
 #include "geometry_msgs/PoseStamped.h"
 #include "geometry_msgs/Vector3Stamped.h"
 #include <sstream>
@@ -26,6 +27,8 @@ double sg = 0.061035*3.141592653/180.0;
 //double sg = 0.061035;
 double sm = 6.0000;
 
+double pressure = 0;
+
 typedef struct imu_data
 {
   int16_t accl[3];
@@ -45,12 +48,14 @@ void phase_packet_data(Packet_t *p,imu_data_t *data)
   data->att[1] = ((float)(int16_t)(p->buf[24] + (p->buf[25]<<8))/100); //pitch
   data->att[0] = ((float)(int16_t)(p->buf[26] + (p->buf[27]<<8))/100); //roll
   data->att[2] = ((float)(int16_t)(p->buf[28] + (p->buf[29]<<8))/10);  //yaw
+  // = (int16_t)(p->buf[31] + (p->buf[29]<<8))/10)
+  data->presure = (int32_t)p->buf[31] + (int32_t)(p->buf[32]<<8) + (int32_t)(p->buf[33]<<16) + (int32_t)(p->buf[34]<<24);
   return;
 }
 
 unsigned long long nanosec()
 {
-  struct timespec time_start={0, 0},time_end={0, 0};
+  struct timespec time_start={0, 0};
   clock_gettime(CLOCK_REALTIME, &time_start);    //有4组稍微大于7或者小于3的
   //clock_gettime(CLOCK_MONOTONIC, &time_start); //有很多组间隔小于1的
   //clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time_start); //很多组大于10的
@@ -102,7 +107,8 @@ void test(int fd)
   const char *setF500 = "AT+ODR=500\r\n";
   const char *reset = "AT+RST\r\n";
 
-  int n,a = 100000;
+  int n;
+  int a = 100000;
   unsigned char c[64] = {0};
 
   printf("\n---------disable out----------\n");
@@ -191,13 +197,13 @@ int main(int argc, char **argv)
 
   ros::init(argc, argv, "imu_publisher");
   ros::NodeHandle n;
-  ros::Publisher imu0_pub = n.advertise<sensor_msgs::Imu>("imu0", 1000);
-  ros::Publisher mag0_pub = n.advertise<geometry_msgs::Vector3Stamped>("mag0", 1000);
-  ros::Publisher pose0_pub = n.advertise<geometry_msgs::PoseStamped>("pose0", 1000);
+  ros::Publisher imu0_pub = n.advertise<sensor_msgs::Imu>("imu1", 1);
+  ros::Publisher pressure_pub = n.advertise<sensor_msgs::FluidPressure>("barometer", 1);
+  ros::Publisher mag0_pub = n.advertise<geometry_msgs::Vector3Stamped>("mag0", 1);
+  ros::Publisher pose0_pub = n.advertise<geometry_msgs::PoseStamped>("pose0", 1);
   
   /*Open serial port*/
-  char *dev ="/dev/ttyUSB0";
-  int fd = open_dev(dev);
+  int fd = open_dev("/dev/ttyUSB0");
   if (fd>0)
     set_speed(fd,460800);
   else {
@@ -220,8 +226,10 @@ int main(int argc, char **argv)
 
   unsigned char ch;
   sensor_msgs::Imu imu_msg;
+  sensor_msgs::FluidPressure pressure_msg;
   geometry_msgs::Vector3Stamped mag_msg;
   geometry_msgs::PoseStamped pose_msg;
+  
   //ros::Rate loop_rate(100);
 
   while(n.ok()) {
@@ -243,22 +251,31 @@ int main(int argc, char **argv)
 	imu_data_t imu;
 	phase_packet_data(p,&imu);
 	char str[128];
-	sprintf(str,"%llu,%lf,%lf,%lf,%lf,%lf,%lf\n", nanosec(),
+	sprintf(str,"%llu,%lf,%lf,%lf,%lf,%lf,%lf %d\n", nanosec(),
 		imu.gyro[0]*sg, imu.gyro[1]*sg, imu.gyro[2]*sg,
-		imu.accl[0]*sa, imu.accl[1]*sa, imu.accl[2]*sa);
+		imu.accl[0]*sa, imu.accl[1]*sa, imu.accl[2]*sa, imu.presure);
       
-	//printf(str,"%s",str); 
-	//fisheye7251和imuV2的time offset是23ms
-	ros::Duration offset(0.023061189);
-	imu_msg.header.stamp = ros::Time::now() + offset;
+	printf(str,"%s",str); 
 	
+	// imu data
+	imu_msg.header.stamp = ros::Time::now();
 	imu_msg.angular_velocity.x = imu.gyro[0] * sg;
 	imu_msg.angular_velocity.y = imu.gyro[1] * sg;
 	imu_msg.angular_velocity.z = imu.gyro[2] * sg;
 	imu_msg.linear_acceleration.x = imu.accl[0] * sa;
 	imu_msg.linear_acceleration.y = imu.accl[1] * sa;
 	imu_msg.linear_acceleration.z = imu.accl[2] * sa;
-
+	
+	// barometer data
+	pressure_msg.header.stamp = imu_msg.header.stamp;
+	if(pressure_msg.fluid_pressure !=  imu.presure)
+     	{
+	  pressure_msg.fluid_pressure = (double)imu.presure;
+	  pressure_pub.publish( pressure_msg);
+	}
+	
+	
+	// mag data
 	mag_msg.header.stamp = imu_msg.header.stamp;
 	mag_msg.vector.x = imu.mag[0] * sm;
 	mag_msg.vector.y = imu.mag[1] * sm;
