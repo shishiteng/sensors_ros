@@ -1,0 +1,62 @@
+%YAML:1.0
+
+# tempdriftscale
+tempdriftscale_acc: !!opencv-matrix
+   rows: 3
+   cols: 1
+   dt: d
+   data: [ 0, 0, 0 ]
+
+tempdriftscale_gyr: !!opencv-matrix
+   rows: 3
+   cols: 1
+   dt: d
+   data: [ 0, 0, 0 ]
+
+# bias 
+bias_acc: !!opencv-matrix
+   rows: 3
+   cols: 1
+   dt: d
+   data: [ 28.7761, 13.1526, 14.5028 ]
+
+bias_gyr: !!opencv-matrix
+   rows: 3
+   cols: 1
+   dt: d
+   data: [ -0.0362767 ,-0.165238, -0.0400638 ]
+
+
+# scale correction
+Ka:!!opencv-matrix
+   rows: 3
+   cols: 3
+   dt: d
+   data: [ 0.00239405,          0,          0,
+         0, 0.00239438,          0,
+         0,          0, 0.00237184]
+
+Kg:!!opencv-matrix
+   rows: 3
+   cols: 3
+   dt: d
+   data: [ 0.00107947,          0,          0,
+         0, 0.00106271,          0,
+         0,          0, 0.00106689]
+
+# axis alignment
+Ta:!!opencv-matrix
+   rows: 3
+   cols: 3
+   dt: d
+   data: [   1, 0.00104735, -0.0076478,
+         0,          1, 0.00294344,
+        -0,          0,          1]
+
+Tg:!!opencv-matrix
+   rows: 3
+   cols: 3
+   dt: d
+   data: [ 1, -0.000705105,  -0.00582579,
+          -0.0108499,            1,  -0.00302084,
+          -0.00140039,  -0.00081541,            1]

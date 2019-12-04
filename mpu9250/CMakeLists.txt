@@ -16,6 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 find_package(Eigen3  REQUIRED)
+find_package(OpenCV REQUIRED)
 include_directories(
   ${catkin_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIR}
@@ -37,6 +38,15 @@ target_link_libraries(mpu9250 ${catkin_LIBRARIES})
 # preIntegration
 add_executable(preIntegration src/preIntegration.cpp)
 target_link_libraries(preIntegration ${catkin_LIBRARIES})
+
+# preIntegration
+add_executable(imu_calibrate src/imu_calibrate.cpp)
+target_link_libraries(imu_calibrate ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
+
+# imu publisher
+add_executable(jy901 src/jy901.cpp)
+target_link_libraries(jy901 ${catkin_LIBRARIES})
+
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
