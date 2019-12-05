@@ -1,0 +1,8 @@
+<?xml version="1.0" ?>
+<launch>
+
+    <include file="$(find ginger_chassis)/launch/keyboard_teleop.launch" />
+    
+    <node pkg="ginger_chassis" type="ginger_chassis_node" name="ginger_chassis" output="screen" />
+
+</launch>

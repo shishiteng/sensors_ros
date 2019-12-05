@@ -9,9 +9,7 @@
 using namespace std;
 using namespace Eigen;
 
-nav_msgs::Path path;
-
-/**************预积分***********************/
+/**************积分***********************/
 class IntegrationOdometry
 {
 public:
@@ -91,21 +89,12 @@ public:
 };
 /*********************************/
 
-ros::Publisher pub_odom;
-ros::Publisher pub_path;
-ros::Publisher pub_pose;
-
 //
 IntegrationOdometry *pOdomIntegration = NULL;
 Vector3d vel_0, gyr_0;
 double current_time = -999.0;
 bool first_odom = false;
 int frame_count;
-
-//结果
-Vector3d Ps;
-Vector3d Vs;
-Matrix3d Rs;
 
 void processOdom(double dt, const Vector3d &linear_velocity, const Vector3d &angular_velocity)
 {
@@ -153,7 +142,6 @@ void odomCallback(const nav_msgs::Odometry::ConstPtr &odom_msg)
     odometry.header = header;
     //odometry.header.frame_id = "world";
     //odometry.child_frame_id = "world";
-    odometry.twist = odom_msg->twist;
     odometry.pose.pose.position.x = (float)pOdomIntegration->delta_p.x();
     odometry.pose.pose.position.y = (float)pOdomIntegration->delta_p.y();
     odometry.pose.pose.position.z = (float)pOdomIntegration->delta_p.z();
@@ -181,21 +169,3 @@ void odomCallback(const nav_msgs::Odometry::ConstPtr &odom_msg)
   }
 }
 
-//测试odom预积分随时间的变化，这里不考虑噪声
-//拿了10秒的数据，matlab做数据拟合，position=4.785*t^2
-int main(int argc, char **argv)
-{
-  ros::init(argc, argv, "integration");
-  ros::NodeHandle n;
-
-  Vector3d vel_0, gyr_0;
-
-  ros::Subscriber sub = n.subscribe("/odom", 1000, odomCallback);
-  pub_odom = n.advertise<nav_msgs::Odometry>("/odom_intergration", 1000);
-  pub_path = n.advertise<nav_msgs::Path>("/odom_integration_path", 1);
-  pub_pose = n.advertise<geometry_msgs::PoseStamped>("/odom_preIntegration_pose", 1000);
-
-  ros::spin();
-
-  return 0;
-}

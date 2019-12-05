@@ -396,6 +396,7 @@ int main(int argc, char** argv)
 
       cv_bridge::CvImage cvi0, cvi1;
       cvi0.header.stamp =  timestamp;
+      //cvi0.header.stamp =  ros::Time::now();
       cvi0.header.frame_id = "image0";
       cvi0.encoding = "mono8";
       cvi0.image = left8u;

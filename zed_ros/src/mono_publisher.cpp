@@ -17,7 +17,7 @@ int main(int argc, char** argv)
   ros::init(argc, argv, "image_publisher");
   ros::NodeHandle nh;
   image_transport::ImageTransport it(nh);
-  image_transport::Publisher pub = it.advertise("camera/image_raw", 1);
+  image_transport::Publisher pub = it.advertise("cam0/image_raw", 1);
 
   // Convert the passed as command line parameter index for the video device to an integer
   std::istringstream video_sourceCmd(argv[1]);
@@ -43,18 +43,26 @@ int main(int argc, char** argv)
   cv::Mat frame,frame0;
   sensor_msgs::ImagePtr msg;
 
-  ros::Rate loop_rate(20);
+  //ros::Rate loop_rate(20);
   while (nh.ok()) {
     cap >> frame;
     if(!frame.empty()) {
-      Rect roi_rect0 = cv::Rect(0,0,width,height);
-      frame0 = frame(roi_rect0);
-      msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", frame0).toImageMsg();
+      //Rect roi_rect0 = cv::Rect(0,0,width,height);
+      //frame0 = frame(roi_rect0);
+      
+      if(frame.channels() > 1) {
+	Mat grey;
+	cvtColor(frame, grey, COLOR_BGR2GRAY);
+	msg = cv_bridge::CvImage(std_msgs::Header(), "mono8", grey).toImageMsg();
+      } else
+	msg = cv_bridge::CvImage(std_msgs::Header(), "mono8", frame).toImageMsg();
+
       pub.publish(msg);
-      //cv::Wait(1);
     }
 
-    ros::spinOnce();
-    loop_rate.sleep();
+    //ros::spinOnce();
+    //loop_rate.sleep();
   }
+
+  return 0;
 }
