@@ -1,18 +1,18 @@
 {
     "saber": [
         {
-            "productID": "C3",
+            "productID": "C2",
             "FW": "CxF.00.05.760"
         }
     ],
     "COM_NAME": "/dev/ttyUSB0",
     "BAUDRATE": 115200,
-    "LINEAR_ACC": true,
+    "LINEAR_ACC": false,
     "ANGULAR_VELOCITY": true,
-    "ORIENTATION": true,
+    "ORIENTATION": false,
 	"EULER": true,
     "ACC_RAW": false,
-    "ACC_CAL": false,
+    "ACC_CAL": true,
     "ACC_KAL": false,
     "GYRO_RAW": false,
     "GYRO_CAL": false,
