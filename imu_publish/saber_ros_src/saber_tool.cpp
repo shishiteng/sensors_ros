@@ -92,6 +92,11 @@ int SaberGetFrame(unsigned char nFD, unsigned char *tmpBuf, int frameLen)
     while (uLen < pkgLen)
     {
         tLen = read(nFD, tmpBuf + uLen, pkgLen - uLen);
+        if (tLen <= 0)
+        {
+            printf("SaberGetFrame: read failed or no data\n");
+            break;
+        }
         uLen += tLen;
     }
     return uLen;
@@ -164,7 +169,7 @@ void SaberParserDataPacket(SaberData *saberDataHandle, u8 *pBuffer, u16 dataLen,
         PID = ((*((u16 *)(pData + index))) & 0x7fff);
         pl = *(pData + index + 2);
 
-        // printf("0x%x \n",PID);
+        //  printf("0x%x \n",PID);
         if (PID == (SESSION_NAME_TEMPERATURE))
         {
             //Ignore pid and pl

@@ -124,23 +124,34 @@ int main(int argc, char **argv)
         while (!SaberValidFrame(dataBuf, pkgLen))
         {
             packLengthFW = SaberAlign(nFD);
+            if (packLengthFW < 0)
+            {
+                ROS_WARN("SaberAlign: no data received!");
+                return -1;
+            }
             SaberFillFrameHead(dataBuf);
             SaberGetFrame(nFD, dataBuf + SABER_HEAD_LEN, packLengthFW + SABER_TAIL_LEN);
 
             // 5s
             if (errCnt++ > 5000000)
-            { if(nFD<0){
-            return -1;
-        }
-              if(nFD<0){
-            return -1;
-        }
-              if(nFD<0){
-            return -1;
-        }
-            } if(nFD<0){
-            return -1;
-        }
+            {
+                if (nFD < 0)
+                {
+                    return -1;
+                }
+                if (nFD < 0)
+                {
+                    return -1;
+                }
+                if (nFD < 0)
+                {
+                    return -1;
+                }
+            }
+            if (nFD < 0)
+            {
+                return -1;
+            }
             usleep(1000);
         }
         //step 4:parser a whole frame to generate ros publish data
@@ -163,15 +174,15 @@ int main(int argc, char **argv)
         imuMsg.header.frame_id = "imu_link";
         pub.publish(imuMsg);
 
-        posestamped.header.stamp = imuMsg.header.stamp;
-        posestamped.header.frame_id = "imu_link";
+        posestamped.header = imuMsg.header;
+        posestamped.pose.orientation = imuMsg.orientation;
         posestamped.pose.position.x = 0;
         posestamped.pose.position.y = 0;
         posestamped.pose.position.z = 0;
         pub_pose.publish(posestamped);
 
-        // pubCnt++;
-        // ROS_INFO(" *** publish_count: %d, *** ", pubCnt);
+        pubCnt++;
+        ROS_INFO(" *** publish_count: %d, *** ", pubCnt);
 
         ros::spinOnce();
         met = r.sleep();
