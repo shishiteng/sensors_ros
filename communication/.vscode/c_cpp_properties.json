@@ -1,0 +1,37 @@
+{
+    "configurations": [
+        {
+            "browse": {
+                "databaseFilename": "",
+                "limitSymbolsToIncludedHeaders": true
+            },
+            "includePath": [
+                "/home/louis/blam_ws/devel/include/**",
+                "/opt/ros/kinetic/include/**",
+                "/home/louis/blam_ws/src/blam/blam_slam/include/**",
+                "/home/louis/blam_ws/src/blam/geometry_utils/include/**",
+                "/home/louis/blam_ws/src/blam/laser_loop_closure/include/**",
+                "/home/louis/blam_ws/src/lio-mapping/include/**",
+                "/home/louis/blam_ws/src/blam/localization/include/**",
+                "/home/louis/blam_ws/src/blam/measurement_synchronizer/include/**",
+                "/home/louis/blam_ws/src/nav_api_interface/include/**",
+                "/home/louis/blam_ws/src/odom_patrol/include/**",
+                "/home/louis/blam_ws/src/blam/parameter_utils/include/**",
+                "/home/louis/blam_ws/src/blam/point_cloud_filter/include/**",
+                "/home/louis/blam_ws/src/blam/point_cloud_localization/include/**",
+                "/home/louis/blam_ws/src/blam/point_cloud_mapper/include/**",
+                "/home/louis/blam_ws/src/blam/point_cloud_odometry/include/**",
+                "/home/louis/blam_ws/src/blam/point_cloud_visualizer/include/**",
+                "/home/louis/blam_ws/src/DataspeedInc-velodyne_simulator/velodyne_gazebo_plugins/include/**",
+                "/home/louis/blam_ws/src/blam/vins_odometry/include/**",
+                "/usr/include/**"
+            ],
+            "name": "ROS",
+            "intelliSenseMode": "gcc-x64",
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "c11",
+            "cppStandard": "c++17"
+        }
+    ],
+    "version": 4
+}
