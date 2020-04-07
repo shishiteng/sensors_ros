@@ -1,0 +1,10 @@
+<!-- -*- mode: XML -*- -->
+
+<launch>
+
+  <node pkg="imu_publish" type="imu" name="imu" output="screen">
+    <param name="config_file" type="string" value="$(find imu_publish)/config/saber_cfg.json" />
+    <!--remap from="/imu/data" to="/imu0"/-->
+  </node>
+
+</launch>

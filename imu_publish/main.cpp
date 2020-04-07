@@ -67,7 +67,7 @@ int main(int argc, char **argv)
 #endif
 
 #ifdef ROS_ON
-    ros::init(argc, argv, "atom_c2");
+    ros::init(argc, argv, "~");
     ros::NodeHandle n;
     pub = n.advertise<sensor_msgs::Imu>("imu0", 20);
     pub_pose = n.advertise<geometry_msgs::PoseStamped>("imu0_pose", 20);
@@ -83,7 +83,13 @@ int main(int argc, char **argv)
 
     //step 1: read config,open serialport,get serialport file desriptor
     //be careful to choose file path
-    nFD = SaberInitConfig("/home/sst/catkin_ws/src/sensors_ros/imu_publish/config/saber_cfg.json");
+    std::string config_file;
+#ifdef ROS_ON
+    ros::param::get("/imu/config_file",config_file);
+    std::cout<<"config_file:"<<config_file<<std::endl;
+#endif
+
+    nFD = SaberInitConfig(config_file.c_str());
     if (nFD < 0)
     {
         printf("saber init failed.\n");
