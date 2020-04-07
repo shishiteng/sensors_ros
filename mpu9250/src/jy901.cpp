@@ -1,6 +1,8 @@
 #include "ros/ros.h"
 #include "sensor_msgs/Imu.h"
 #include "sensor_msgs/FluidPressure.h"
+#include <geometry_msgs/PoseStamped.h>
+#include "tf/transform_datatypes.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -33,7 +35,7 @@ unsigned long long nanosec()
 
 int uart_open(int fd, const char *pathname)
 {
-    fd = open(pathname, O_RDWR | O_NOCTTY);
+    fd = open(pathname, O_RDWR | O_NOCTTY | O_NDELAY);
     if (-1 == fd)
     {
         perror("Can't Open Serial Port");
@@ -169,7 +171,7 @@ void ParseData(char chr)
 
     time_t now;
     chrBuf[chrCnt++] = chr;
-    if (chrCnt < 11)
+    if (chrCnt < 44)
         return;
 
     if ((chrBuf[0] != 0x55) || ((chrBuf[1] & 0x50) != 0x50))
@@ -212,7 +214,7 @@ void ParseData(char chr)
         char *H = (char *)&sData[2];
         pressure = (int)((P[3] & 0xff) << 24) + (int)((P[2] & 0xff) << 16) + (int)((P[1] & 0xff) << 8) + (int)P[0]; //（Pa）
         height = (int)((H[3] & 0xff) << 24) + (int)((H[2] & 0xff) << 16) + (int)((H[1] & 0xff) << 8) + (int)H[0];   // cm
-        //printf("height: %d pressure: %d\n", height, pressure);
+        // printf("height: %d pressure: %d\n", height, pressure);
 
         break;
     }
@@ -224,6 +226,7 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "jy901");
     ros::NodeHandle n;
     ros::Publisher imu_pub = n.advertise<sensor_msgs::Imu>("imu0", 1);
+    ros::Publisher imu_pose_pub = n.advertise<geometry_msgs::PoseStamped>("imu0_pose", 20);
     ros::Publisher pressure_pub = n.advertise<sensor_msgs::FluidPressure>("barometer", 1);
 
     double sa = 9.8;
@@ -245,47 +248,77 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
 
+    fd_set rd;
+    FD_ZERO(&rd);
+    FD_SET(fd, &rd);
+
     ros::Rate loop_rate(200);
 
     while (ros::ok())
     {
-        ret = recv_data(fd, r_buf, 44);
-        if (ret == -1)
+        int ret = select(fd + 1, &rd, NULL, NULL, NULL);
+        if (ret < 0)
         {
-            fprintf(stderr, "uart read failed!\n");
-            exit(EXIT_FAILURE);
+            perror("select error!\n");
+            continue;
         }
-        for (int i = 0; i < ret; i++)
+        else if (ret == 0)
         {
-            // printf("%2X ", r_buf[i]);
-            // fprintf(fp, "%2X ", r_buf[i]);
-            ParseData(r_buf[i]);
+            perror("time out!\n");
+            continue;
         }
-        if (ret > 0)
+
+        if (FD_ISSET(fd, &rd))
         {
-            // imu data
-            //printf("%lf _ %f %f %f %f %f %f\n", (double)nanosec() / 1000000000.f, w[0], w[1], w[2], a[0], a[1], a[2]);
+            ret = recv_data(fd, r_buf, 100);
+            if (ret == -1)
+            {
+                fprintf(stderr, "uart read failed!\n");
+                exit(EXIT_FAILURE);
+            }
+            for (int i = 0; i < ret; i++)
+            {
+                // printf("%2X ", r_buf[i]);
+                // fprintf(fp, "%2X ", r_buf[i]);
+                ParseData(r_buf[i]);
+            }
+            if (ret > 0)
+            {
+                // imu data
+                //printf("%lf _ %f %f %f %f %f %f\n", (double)nanosec() / 1000000000.f, w[0], w[1], w[2], a[0], a[1], a[2]);
 
-            sensor_msgs::Imu imu_msg;
-            imu_msg.header.stamp = ros::Time::now();
-            imu_msg.angular_velocity.x = w[0] * sg;
-            imu_msg.angular_velocity.y = w[1] * sg;
-            imu_msg.angular_velocity.z = w[2] * sg;
-            imu_msg.linear_acceleration.x = a[0] * sa;
-            imu_msg.linear_acceleration.y = a[1] * sa;
-            imu_msg.linear_acceleration.z = a[2] * sa;
+                sensor_msgs::Imu imu_msg;
+                imu_msg.header.frame_id = "imu";
+                imu_msg.header.stamp = ros::Time::now();
+                imu_msg.angular_velocity.x = w[0] * sg;
+                imu_msg.angular_velocity.y = w[1] * sg;
+                imu_msg.angular_velocity.z = w[2] * sg;
+                imu_msg.linear_acceleration.x = a[0] * sa;
+                imu_msg.linear_acceleration.y = a[1] * sa;
+                imu_msg.linear_acceleration.z = a[2] * sa;
+                imu_msg.orientation = tf::createQuaternionMsgFromRollPitchYaw(Angle[0] * sg, Angle[1] * sg, Angle[2] * sg);
 
-            imu_pub.publish(imu_msg);
+                imu_pub.publish(imu_msg);
 
-            // barometer data
-            sensor_msgs::FluidPressure pressure_msg;
-            pressure_msg.header.stamp = imu_msg.header.stamp;
-            pressure_msg.fluid_pressure = (double)pressure / 100.f;
-            pressure_pub.publish(pressure_msg);
+                // pose
+                geometry_msgs::PoseStamped posestamped;
+                posestamped.header = imu_msg.header;
+                posestamped.pose.orientation = imu_msg.orientation;
+                posestamped.pose.position.x = 0;
+                posestamped.pose.position.y = 0;
+                posestamped.pose.position.z = 0;
+                imu_pose_pub.publish(posestamped);
+
+                // barometer data
+                sensor_msgs::FluidPressure pressure_msg;
+                pressure_msg.header.stamp = imu_msg.header.stamp;
+                pressure_msg.fluid_pressure = (double)pressure / 100.f;
+                pressure_pub.publish(pressure_msg);
+            }
         }
 
         // usleep(5000);
-        loop_rate.sleep();
+        // loop_rate.sleep();
     }
 
     ret = uart_close(fd);
