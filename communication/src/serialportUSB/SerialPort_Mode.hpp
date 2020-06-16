@@ -28,6 +28,7 @@ class SerialPort_Mode
    ros::Publisher backVel_pub;
  
    ros::Publisher IMU_pub;
+   ros::Publisher pose_pub;
 
    ros::Subscriber cmdVel_sub;
 

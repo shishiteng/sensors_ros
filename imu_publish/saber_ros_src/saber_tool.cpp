@@ -92,6 +92,11 @@ int SaberGetFrame(unsigned char nFD, unsigned char *tmpBuf, int frameLen)
     while (uLen < pkgLen)
     {
         tLen = read(nFD, tmpBuf + uLen, pkgLen - uLen);
+        if (tLen <= 0)
+        {
+            printf("SaberGetFrame: read failed or no data\n");
+            break;
+        }
         uLen += tLen;
     }
     return uLen;
@@ -164,6 +169,7 @@ void SaberParserDataPacket(SaberData *saberDataHandle, u8 *pBuffer, u16 dataLen,
         PID = ((*((u16 *)(pData + index))) & 0x7fff);
         pl = *(pData + index + 2);
 
+        //  printf("0x%x \n",PID);
         if (PID == (SESSION_NAME_TEMPERATURE))
         {
             //Ignore pid and pl
@@ -255,6 +261,7 @@ void SaberParserDataPacket(SaberData *saberDataHandle, u8 *pBuffer, u16 dataLen,
             index += PL_KAL_DATA;
             if (fpLog != NULL)
                 fprintf(fpLog, " *** accKal:     \t%11.4f, %11.4f, %11.4f *** \n", saberDataHandle->accKal.accX, saberDataHandle->accKal.accY, saberDataHandle->accKal.accZ);
+            fprintf(stderr, " *** accKal:     \t%11.4f, %11.4f, %11.4f *** \n", saberDataHandle->accKal.accX, saberDataHandle->accKal.accY, saberDataHandle->accKal.accZ);
         }
         else if (PID == SESSION_NAME_KAL_GYRO)
         {
@@ -299,7 +306,7 @@ void SaberParserDataPacket(SaberData *saberDataHandle, u8 *pBuffer, u16 dataLen,
             saberDataHandle->euler.dataLen = pl;
             index += PL_QUAT_EULER;
 
-            printf(" *** euler:      \t%11.4f, %11.4f, %11.4f *** \n", saberDataHandle->euler.roll, saberDataHandle->euler.pitch, saberDataHandle->euler.yaw);
+            // printf(" *** euler:      \t%11.4f, %11.4f, %11.4f *** \n", saberDataHandle->euler.roll, saberDataHandle->euler.pitch, saberDataHandle->euler.yaw);
         }
 
         else if (PID == SESSION_NAME_ROTATION_M)

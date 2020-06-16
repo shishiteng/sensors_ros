@@ -25,6 +25,8 @@
 #include <ros/time.h>
 #endif
 
+#include "tf/transform_datatypes.h"
+
 //usr include
 #include "saber_ros_inc/saber_serial.h"
 #include "saber_ros_inc/saber_macro.h"
@@ -65,7 +67,7 @@ int main(int argc, char **argv)
 #endif
 
 #ifdef ROS_ON
-    ros::init(argc, argv, "atomC2");
+    ros::init(argc, argv, "~");
     ros::NodeHandle n;
     pub = n.advertise<sensor_msgs::Imu>("imu0", 20);
     pub_pose = n.advertise<geometry_msgs::PoseStamped>("imu0_pose", 20);
@@ -81,7 +83,13 @@ int main(int argc, char **argv)
 
     //step 1: read config,open serialport,get serialport file desriptor
     //be careful to choose file path
-    nFD = SaberInitConfig("/home/sst/catkin_ws/src/sensors_ros/imu_publish/config/saber_cfg.json");
+    std::string config_file;
+#ifdef ROS_ON
+    ros::param::get("/imu/config_file",config_file);
+    std::cout<<"config_file:"<<config_file<<std::endl;
+#endif
+
+    nFD = SaberInitConfig(config_file.c_str());
     if (nFD < 0)
     {
         printf("saber init failed.\n");
@@ -122,13 +130,32 @@ int main(int argc, char **argv)
         while (!SaberValidFrame(dataBuf, pkgLen))
         {
             packLengthFW = SaberAlign(nFD);
+            if (packLengthFW < 0)
+            {
+                ROS_WARN("SaberAlign: no data received!");
+                return -1;
+            }
             SaberFillFrameHead(dataBuf);
             SaberGetFrame(nFD, dataBuf + SABER_HEAD_LEN, packLengthFW + SABER_TAIL_LEN);
 
             // 5s
             if (errCnt++ > 5000000)
             {
-                printf("no data!\n");
+                if (nFD < 0)
+                {
+                    return -1;
+                }
+                if (nFD < 0)
+                {
+                    return -1;
+                }
+                if (nFD < 0)
+                {
+                    return -1;
+                }
+            }
+            if (nFD < 0)
+            {
                 return -1;
             }
             usleep(1000);
@@ -136,40 +163,32 @@ int main(int argc, char **argv)
         //step 4:parser a whole frame to generate ros publish data
         SaberParserDataPacket(&saberDataHandle, &dataBuf[SABER_HEAD_LEN], packLengthFW, fpLog);
 #ifdef ROS_ON
-        imuMsg.linear_acceleration.x = saberDataHandle.accLinear.accX;
-        imuMsg.linear_acceleration.y = saberDataHandle.accLinear.accY;
-        imuMsg.linear_acceleration.z = saberDataHandle.accLinear.accZ;
+        imuMsg.linear_acceleration.x = saberDataHandle.accCal.accX * ACCG_NMS;
+        imuMsg.linear_acceleration.y = saberDataHandle.accCal.accY * ACCG_NMS;
+        imuMsg.linear_acceleration.z = saberDataHandle.accCal.accZ * ACCG_NMS;
 
         imuMsg.angular_velocity.x = saberDataHandle.gyroCal.gyroX * DEG_RAD;
         imuMsg.angular_velocity.y = saberDataHandle.gyroCal.gyroY * DEG_RAD;
         imuMsg.angular_velocity.z = saberDataHandle.gyroCal.gyroZ * DEG_RAD;
 
-        double norm = sqrt(saberDataHandle.quat.Q0.float_x * saberDataHandle.quat.Q0.float_x +
-                           saberDataHandle.quat.Q1.float_x * saberDataHandle.quat.Q1.float_x +
-                           saberDataHandle.quat.Q2.float_x * saberDataHandle.quat.Q2.float_x +
-                           saberDataHandle.quat.Q3.float_x * saberDataHandle.quat.Q3.float_x);
-
-        imuMsg.orientation.x = saberDataHandle.quat.Q0.float_x / norm;
-        imuMsg.orientation.y = saberDataHandle.quat.Q1.float_x / norm;
-        imuMsg.orientation.z = saberDataHandle.quat.Q2.float_x / norm;
-        imuMsg.orientation.w = saberDataHandle.quat.Q3.float_x / norm;
+        // 模组输出的四元数和欧拉角有问题，pitch对应的是x轴，这里做一个转换，把pitch和roll调换顺序
+        imuMsg.orientation = tf::createQuaternionMsgFromRollPitchYaw(saberDataHandle.euler.pitch * DEG_RAD,
+                                                                     saberDataHandle.euler.roll * DEG_RAD,
+                                                                     saberDataHandle.euler.yaw * DEG_RAD);
 
         imuMsg.header.stamp = ros::Time::now();
         imuMsg.header.frame_id = "imu_link";
-        imuMsg.header.seq = seq;
-        seq = seq + 1;
         pub.publish(imuMsg);
 
-        posestamped.header.stamp = imuMsg.header.stamp;
-        posestamped.header.frame_id = "imu_link";
+        posestamped.header = imuMsg.header;
+        posestamped.pose.orientation = imuMsg.orientation;
         posestamped.pose.position.x = 0;
         posestamped.pose.position.y = 0;
         posestamped.pose.position.z = 0;
-        posestamped.pose.orientation = imuMsg.orientation;
         pub_pose.publish(posestamped);
 
         pubCnt++;
-        ROS_INFO(" *** publish_count: %d, *** \n", pubCnt);
+        ROS_INFO(" *** publish_count: %d, *** ", pubCnt);
 
         ros::spinOnce();
         met = r.sleep();
