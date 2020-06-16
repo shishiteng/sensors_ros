@@ -1,0 +1,12 @@
+time    stamp
+int32        encoder
+float32       rear_wheel_speed
+float32       steering_angle
+uint16[12]    sonar
+uint16        sonar_NO
+uint16        lights
+uint8         e_stop
+uint8         battery_volume
+uint8         battery_voltage
+int8          battery_current
+uint8         battery_temperature
