@@ -67,7 +67,7 @@ int main(int argc, char **argv)
 #endif
 
 #ifdef ROS_ON
-    ros::init(argc, argv, "~");
+    ros::init(argc, argv, "atomc2");
     ros::NodeHandle n;
     pub = n.advertise<sensor_msgs::Imu>("imu0", 20);
     pub_pose = n.advertise<geometry_msgs::PoseStamped>("imu0_pose", 20);
@@ -118,7 +118,7 @@ int main(int argc, char **argv)
 
     //get a whole frame and valid the frame by ros::rate,such as 100hz
 #ifdef ROS_ON
-    ros::Rate r(100);
+    ros::Rate r(400);
     while (ros::ok())
 #else
     while (1)

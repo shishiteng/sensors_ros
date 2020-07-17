@@ -6,7 +6,7 @@
         }
     ],
     "COM_NAME": "/dev/ttyUSB0",
-    "BAUDRATE": 115200,
+    "BAUDRATE": 921600,
     "LINEAR_ACC": false,
     "ANGULAR_VELOCITY": true,
     "ORIENTATION": false,
